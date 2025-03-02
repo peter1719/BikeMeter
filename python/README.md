@@ -24,8 +24,17 @@ pip install -r requirements.txt
 
 4. 啟動伺服器
 ```
-python main.py
+python backend_mqtt.py
 ```
+
+## 端口配置
+
+後端服務使用以下端口：
+
+- MQTT Broker: 預設端口 1883（可在 backend_mqtt.py 中配置）
+- WebSocket 連接: 預設端口 5000（可在 backend_mqtt.py 中配置）
+
+如需修改端口配置，請編輯 backend_mqtt.py 文件中的相關設置。
 
 ## 產生 requirements.txt
 
