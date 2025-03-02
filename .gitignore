@@ -1,0 +1,76 @@
+# 依賴目錄
+/node_modules
+
+
+# 測試覆蓋率
+/coverage
+
+# 生產構建檔案
+/build
+/dist
+/out
+
+# 環境變數檔案
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 日誌檔案
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+*.log
+
+# 編輯器目錄和檔案
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 快取目錄
+.cache/
+.next/
+.nuxt/
+.tmp/
+.temp/
+
+# 系統檔案
+Thumbs.db
+.DS_Store
+
+# 忽略所有文件和文件夾
+/*
+
+# 不忽略指定的項目目錄
+!/coach-frontend/
+!/python/
+!/user-frontend/
+!/.gitignore
+!/README.md
+
+# 在允許的目錄中仍要忽略的項目
+**/node_modules/
+**/.env*
+**/.DS_Store
+**/.idea/
+**/.vscode/
+**/coverage/
+**/build/
+**/dist/
+**/out/
+**/*.log
+**/.cache/
+**/.next/
+**/.nuxt/
+**/.tmp/
+**/.temp/
+**/Thumbs.db
+.venv/
