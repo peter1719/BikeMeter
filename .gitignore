@@ -55,6 +55,7 @@ Thumbs.db
 !/user-frontend/
 !/.gitignore
 !/README.md
+!/ServerGuide.md
 
 # 在允許的目錄中仍要忽略的項目
 **/node_modules/
