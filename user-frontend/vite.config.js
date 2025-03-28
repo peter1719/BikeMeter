@@ -6,6 +6,16 @@ import { presetUno, presetAttributify, presetIcons } from 'unocss'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/user/',
+  server: {
+    proxy: {
+      '/api/': {
+        target: 'http://localhost:5000/',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
   plugins: [
     vue(),
     VitePWA({

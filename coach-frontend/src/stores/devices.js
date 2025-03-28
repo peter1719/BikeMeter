@@ -14,7 +14,7 @@ export const useDevicesStore = defineStore('devices', () => {
     if (isSocketConnected.value && socket.value) return
     
     // 建立 Socket.IO 連接
-    const newSocket = io('http://localhost:5000', {
+    const newSocket = io('ws://your-websocket-server-url', {
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 5,

@@ -141,7 +141,7 @@ const fetchDeviceStatus = async () => {
   error.value = '';
   
   try {
-    const response = await fetch(`http://localhost:5000/api/device/status?device_id=${formattedDeviceId.value}`);
+    const response = await fetch(`/api/device/status?device_id=${formattedDeviceId.value}`);
     if (!response.ok) {
       throw new Error('無法獲取設備數據');
     }

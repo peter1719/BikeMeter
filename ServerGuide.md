@@ -9,9 +9,10 @@
 3. [安裝 MQTT 服務器](#安裝-mqtt-服務器)
 4. [專案部署](#專案部署)
 5. [網絡配置](#網絡配置)
-6. [服務啟動](#服務啟動)
-7. [設置系統服務](#設置系統服務)
-8. [故障排除](#故障排除)
+6. [前端配置更新](#前端配置更新)
+7. [服務啟動](#服務啟動)
+8. [設置系統服務](#設置系統服務)
+9. [故障排除](#故障排除)
 
 ## 前置準備
 
@@ -40,6 +41,8 @@ sudo apt upgrade -y
 
 ```bash
 sudo apt install -y python3-pip python3-venv git ufw nginx
+sudo apt-get install nodejs
+sudo apt install npm
 ```
 
 ### 3. 設置防火牆
@@ -56,6 +59,9 @@ sudo ufw allow 9001/tcp
 
 # 允許 HTTP 端口 (5000，後端 API)
 sudo ufw allow 5000/tcp
+
+# 允許 HTTP 端口 (5001，後端 API)
+sudo ufw allow 5001/tcp
 
 # 允許 HTTP/HTTPS 端口 (80/443，如果使用 Nginx 反向代理)
 sudo ufw allow 80/tcp
@@ -100,24 +106,6 @@ protocol websockets
 
 > **注意**：在生產環境中，建議設置用戶名和密碼認證，而不是允許匿名訪問。
 
-### 3. 設置用戶名和密碼（可選但推薦用於生產環境）
-
-```bash
-# 創建密碼文件，系統會提示您輸入密碼
-sudo mosquitto_passwd -c /etc/mosquitto/passwd mqtt_user
-
-# 修改配置文件
-sudo nano /etc/mosquitto/conf.d/default.conf
-```
-
-添加以下行到配置文件：
-
-```
-# 使用密碼文件進行認證
-password_file /etc/mosquitto/passwd
-allow_anonymous false
-```
-
 ### 4. 重啟 Mosquitto 服務
 
 ```bash
@@ -147,41 +135,24 @@ mosquitto_sub -h localhost -t "test/topic" -v
 mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT"
 ```
 
-如果配置了密碼認證，使用以下命令：
-
-```bash
-# 訂閱主題（使用認證）
-mosquitto_sub -h localhost -t "test/topic" -v -u mqtt_user -P your_password
-
-# 發布消息（使用認證）
-mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT" -u mqtt_user -P your_password
-```
-
-### 6. 配置專案使用外部 MQTT Broker（可選）
-
-若您選擇使用 Mosquitto 而非專案內建的 MQTT Broker，請在您的程式碼中使用以下方式連接：
-
-```python
-# 建立 MQTT 客戶端連接
-mqtt_client = mqtt.Client()
-
-# 如果設置了密碼認證，請取消下行註解並填入正確的用戶名和密碼
-# mqtt_client.username_pw_set("mqtt_user", "your_password")
-
-# 連接到本地 Mosquitto 伺服器
-mqtt_client.connect("localhost", 1883, 60)
-
-# 啟動背景處理執行緒
-mqtt_client.loop_start()
-```
-
 ## 專案部署
 
-### 1. 克隆專案
+### 1. 克隆專案 (請換成自己要放置的路徑 ex: /home/username/BikeMeter -> /var/www/BikeMeter)
 
 ```bash
-git clone https://your-repository-url.git
-cd your-project-folder
+git clone https://github.com/peter1719/BikeMeter.git
+cd BikeMeter
+
+# 設置目錄所有者為 Nginx 用戶
+sudo chown -R www-data:www-data /home/username/BikeMeter/user-frontend/dist
+sudo chown -R www-data:www-data /home/username/BikeMeter/coach-frontend/dist
+
+# 設置適當的權限
+sudo chmod -R 755 /home/username/BikeMeter/user-frontend/dist
+sudo chmod -R 755 /home/username/BikeMeter/coach-frontend/dist
+chmod +x /home/
+chmod +x /home/username/
+chmod +x /home/username/BikeMeter
 ```
 
 ### 2. 設置 Python 環境
@@ -193,7 +164,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. 設置前端環境（如果需要）
+### 3. 設置前端環境
 
 ```bash
 # 用戶前端
@@ -209,30 +180,10 @@ npm run build
 
 ## 網絡配置
 
-### 1. 配置 MQTT Broker
-
-編輯 `python/backend_mqtt.py` 文件，確保 MQTT Broker 監聽所有網絡接口：
-
-```python
-# 將 MQTT Broker 綁定到所有網絡接口，而非僅本地
-broker = MQTTBroker(host="0.0.0.0", port=1883)
-```
-
-### 2. 配置 WebSocket 服務
-
-確保 WebSocket 服務也綁定到所有網絡接口：
-
-```python
-# 在 backend_mqtt.py 中設定 Flask 應用監聽所有網絡接口
-app.run(host="0.0.0.0", port=5000)
-```
-
-### 3. 設置 Nginx 反向代理（可選但推薦）
-
-創建 Nginx 配置文件：
+新增 Nginx 配置文件：(建議註解 default 的設定)
 
 ```bash
-sudo nano /etc/nginx/sites-available/bike-monitor
+sudo nano /etc/nginx/conf.d/bike.conf
 ```
 
 添加以下配置：
@@ -240,28 +191,33 @@ sudo nano /etc/nginx/sites-available/bike-monitor
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;  # 替換為您的域名或伺服器 IP
+    server_name bike;
+    index index.html;
 
     # 前端靜態文件
-    location / {
-        root /path/to/your-project-folder/user-frontend/dist;
+    location /user/ {
+        alias /home/username/BikeMeter/user-frontend/dist;
         try_files $uri $uri/ /index.html;
     }
 
     # 教練前端
-    location /coach {
-        alias /path/to/your-project-folder/coach-frontend/dist;
+    location /coach/ {
+        alias /home/username/BikeMeter/coach-frontend/dist/;
         try_files $uri $uri/ /index.html;
     }
 
     # API 反向代理
-    location /api {
+    location /socket.io/ {
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header  Host $host;
+        proxy_set_header  X-Real-IP  $remote_addr;
+        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header  X-Forwarded-Proto   $scheme;
         proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
     }
 }
 ```
@@ -269,9 +225,6 @@ server {
 啟用配置並重啟 Nginx：
 
 ```bash
-# 建立符號連結啟用配置
-sudo ln -s /etc/nginx/sites-available/bike-monitor /etc/nginx/sites-enabled/
-
 # 檢查 Nginx 配置是否有語法錯誤
 sudo nginx -t
 
@@ -279,7 +232,70 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-## 服務啟動
+
+## 設置 SSL（可選但推薦）
+
+```bash
+# 安裝 Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# 獲取並配置 SSL 證書
+sudo certbot --nginx -d your-domain.com
+
+# 設置自動續期
+sudo systemctl status certbot.timer
+```
+
+## 前端配置更新
+
+在部署到生產環境前，需要更新前端代碼中的 WebSocket 服務器 URL。
+
+### 1. 更新教練前端 WebSocket 連接
+
+編輯 `coach-frontend/src/stores/devices.js` 文件：
+
+```bash
+nano coach-frontend/src/stores/devices.js
+```
+
+找到以下代碼段：
+
+```javascript
+// 建立 Socket.IO 連接
+const newSocket = io('ws://your-websocket-server-url', {
+  transports: ['polling', 'websocket'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+})
+```
+
+將 `'ws://your-websocket-server-url'` 替換為您的實際服務器地址，例如：
+
+```javascript
+// 建立 Socket.IO 連接
+const newSocket = io('ws://your-domain.com', {  // 替換為您的實際域名或IP地址
+  transports: ['polling', 'websocket'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+})
+```
+
+### 2. 重新構建前端
+
+更新配置後，需要重新構建前端：
+
+```bash
+cd coach-frontend
+npm run build
+```
+
+### 3. 更新用戶前端（如果適用）
+
+如果用戶前端也使用了 WebSocket 連接，請按照類似步驟更新相應文件。
+
+## 服務啟動 (尚未測試過)
 
 ### 手動啟動服務
 
@@ -294,7 +310,7 @@ source venv/bin/activate
 python backend_mqtt.py
 ```
 
-## 設置系統服務
+## 設置系統服務 (尚未測試過)
 
 為了確保服務在伺服器重啟後自動啟動，建議設置系統服務：
 
@@ -362,12 +378,6 @@ sudo netstat -tulpn | grep LISTEN
 ```
 
 ### 測試 MQTT 連接
-
-安裝 MQTT 客戶端工具：
-
-```bash
-sudo apt install -y mosquitto-clients
-```
 
 訂閱測試：
 
